@@ -7,6 +7,10 @@ Open in OpenSCAD (or run `openscad -o out.stl file.scad` headless).
 - `finray_finger.scad` — the fin-ray finger. Also contains the fingertip
   silicone-pad drape mold (`part = "mold"`).
 - `whiffletree.scad` — 3-rocker tendon differential print plate.
+- `palm_chassis.scad` — palm/chassis: finger + thumb mounts, servo pocket,
+  tendon routing, jamming-pad recess, wrist bolt circle.
+- `wrist_socket.scad` — wrist adapter (`part="adapter"`) + parametric forearm
+  socket cuff (`part="cuff"`, scale to limb circumference measurements).
 
 ## Generating the finger set
 Render four STLs by overriding `finger_length` (all other params shared):
@@ -32,6 +36,9 @@ Thumb: reuse the index finger (80 mm) mounted on the palm at ~45° opposition.
 |---|---|---|
 | Fingers | TPU 95A | Print lying on side face (as modeled); dry filament first |
 | Rockers | PETG/PLA+ | Flat, 4 walls, 30% gyroid |
+| Palm chassis | PETG/PLA+ | Palm-down, 4 walls, 30% gyroid, heat-set M3 inserts |
+| Wrist adapter | PETG | Flat |
+| Socket cuff | TPU 95A | Compliant, comfortable; scale to limb measurements |
 | Pad mold | PLA | 0.12 mm layers, smooth cavity with brief heat-gun pass |
 
 Full settings: `../finray-cad-print-parameters.md`.

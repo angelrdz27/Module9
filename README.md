@@ -18,13 +18,17 @@ granular-jamming pad locks the hand rigid only when it needs to carry load.
 | `hardware-research.md` | Component research & ~$150 / ~$400 BOMs |
 | `architecture.md` | System architecture (mechanical / electrical / firmware / software) |
 | `ROADMAP.md` | Phased development plan with exit criteria |
+| `docs/wiring-schematic.md` | Full electrical schematic & connection tables |
+| `docs/assembly-guide.md` | Step-by-step build instructions |
+| `docs/test-protocol.md` | Validation tests mapped to roadmap exit criteria |
 
 ### Build artifacts
 | Directory | Contents |
 |---|---|
-| `cad/` | Parametric OpenSCAD models (fin-ray finger, whiffle-tree, pad mold) |
+| `cad/` | Parametric OpenSCAD models (fin-ray finger, whiffle-tree, palm chassis, wrist/socket, pad mold) |
 | `firmware/` | ESP32-S3 control firmware (grasp FSM, STS3215 driver, EMG intent, jamming) |
-| `software/` | EMG data collection & gesture-classifier training pipeline |
+| `software/` | EMG collection, classifier training, and fatigue cycle-test scripts |
+| `docs/` | Wiring schematic, assembly guide, test protocol |
 
 ### Quick start
 1. Read `ROADMAP.md` → order the starter BOM in `hardware-research.md`.

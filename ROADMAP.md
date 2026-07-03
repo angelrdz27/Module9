@@ -10,22 +10,31 @@ Project docs:
 - `software/` — EMG data collection & training pipeline
 
 ## Phase 0 — Procurement & setup (week 0)
-- [ ] Order the ~$150 starter BOM (`hardware-research.md`)
-- [ ] Dry-box or filament dryer for TPU
-- [ ] Install OpenSCAD, Arduino IDE (ESP32 board package), Python 3.11+
+See `PROCUREMENT.md` for the full checklist.
+- [x] Toolchain: OpenSCAD installed; all CAD renders to manifold STLs
+      (`cad/render_all.sh`); Python EMG pipeline passes `--selftest`
+- [x] Pre-rendered STLs provided in `build/stl/` so slicing needs no CAD tool
+- [ ] Order the ~$166 starter BOM (`PROCUREMENT.md` §A) — *physical, user*
+- [ ] Dry-box or filament dryer for TPU — *physical, user*
+- [ ] Confirm slicer opens `build/stl/*.stl`; Arduino IDE compiles firmware
 
 **Exit criteria:** all parts on hand, TPU dried, toolchain compiles the firmware.
+*(Toolchain + design side complete; procurement/drying are physical steps.)*
 
 ## Phase 1 — Single finger (weeks 1–2)
-- [ ] Print the flow-calibration coupon (`finray-cad-print-parameters.md` §2)
-- [ ] Print 3 finger variants from `cad/finray_finger.scad`:
-      baseline (1.0 mm wall), floating-rib, graded-wall
-- [ ] Bench test: clamp base, push mid-finger, verify tip wraps toward contact
-- [ ] Add tendon + PTFE liner, pull by hand, measure fingertip force
-      (kitchen scale, target 5–15 N)
-- [ ] 500-cycle flex test; inspect rib junctions
+- [x] Fin-ray geometry designed, rendered, and visually verified (side
+      profile shows correct two-wall + diagonal-rib truss) — `build/png/`
+- [x] Flow-calibration coupon modeled + rendered (`cad/calibration_coupon.scad`)
+- [x] Three finger variants exported: baseline, floating-rib, graded-wall
+      (`build/stl/finger_{index,floating,graded}.stl`)
+- [ ] Print the coupon; tune flow to 1.0 mm ±0.05 (T1) — *physical, user*
+- [ ] Bench test: push mid-finger, verify tip wraps toward contact (T2)
+- [ ] Add tendon + PTFE liner, measure fingertip force 5–15 N (T3)
+- [ ] 500-cycle flex test; inspect rib junctions (T4)
 
 **Exit criteria:** one variant selected; ≥5 N fingertip force; no cracks at 500 cycles.
+*(Design/export complete; the print-and-measure loop is physical — run
+`docs/test-protocol.md` T1–T4.)*
 
 ## Phase 2 — Hand assembly, single servo (weeks 3–4)
 - [ ] Print 4 fingers (80/88/82/65 mm) + thumb + palm + whiffle-tree

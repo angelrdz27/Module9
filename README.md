@@ -31,6 +31,9 @@ granular-jamming pad locks the hand rigid only when it needs to carry load.
 | `software/` | EMG collection, classifier training, and fatigue cycle-test scripts |
 | `docs/` | Wiring schematic, assembly guide, test protocol |
 | `build/` | Pre-rendered, manifold-checked STLs + preview PNGs (ready to slice) |
+| `attacksurface.md` | Running security inventory of every system/vendor/tech + its exposure |
+| `.claude/skills/attack-surface/` | Skill that maintains `attacksurface.md` |
+| `.claude/workflows/AssessAttackSurface.js` | Workflow that assesses a surface & recommends test cadence |
 
 ### Quick start
 1. Read `ROADMAP.md`; order the starter BOM via `PROCUREMENT.md`.

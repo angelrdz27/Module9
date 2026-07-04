@@ -13,15 +13,28 @@ identity/OAuth/SSO, VPN/network) are kept as **placeholders** below so the gaps 
 visible rather than silently implied-complete.
 
 **To widen coverage:** add more repos to the session (`list_repos` → `add_repo`),
-or fill the placeholder sections with systems you know about (cloud accounts,
-domains, databases, vendors). Nothing here is fabricated — absence of a system
-means "not seen," not "assessed as safe."
+or fill the placeholder sections with systems you know about. Nothing here is
+fabricated — absence of a system means "not seen," not "assessed as safe."
+
+## Assessment summary (last run: 2026-07-04)
+Assessed by the `AssessAttackSurface` workflow — **83 agents**, enumerate →
+analyze (5 lenses) → adversarial verify → cadence — plus a manual cross-check.
+Headline results:
+- **No secrets** anywhere in history (verified across all commits). **No CI/CD**,
+  so also no automated scanning or branch gating today.
+- **No network exposure**: firmware initializes **no radio** (verified — zero
+  `WiFi/BLE/OTA/TCP` references); host tooling opens **no socket**. Everything is
+  `physical-only` or `local-only` right now.
+- The dominant risk is **unauthenticated control of a body-worn actuator** — fine
+  under today's physical-only model, dangerous the moment any radio is enabled.
+- One **safety defect the assessment found has already been fixed**: the serial
+  reader could block the 100 Hz control loop for up to 1 s (see firmware entry).
 
 ## Legend
 - **Exposure/audience:** `public` · `internal` · `behind VPN` · `token-required` · `OAuth-gated` · `physical-only` · `local-only` · `none`
 - **Severity:** `info` < `low` < `medium` < `high` < `critical`
+- **Verification:** `CONFIRMED` (evidenced) · `PLAUSIBLE` (design-level/likely) · `RESOLVED` (fixed) · `self-assessed`
 - **Criticality:** blast radius × data sensitivity × safety impact.
-- **Verification:** `CONFIRMED` (evidenced) · `PLAUSIBLE` (design-level/likely) · `self-assessed` (author judgment, pending workflow pass).
 
 ---
 
@@ -29,22 +42,23 @@ means "not seen," not "assessed as safe."
 
 ### GitHub repo — `angelrdz27/Module9`
 - **Classification:** repo / VCS (source hosting)
-- **Technology:** Git; GitHub platform. Content: Markdown docs, Python, Arduino/C++, OpenSCAD, plus committed STL/PNG binaries.
-- **Hosting:** third-party (**GitHub**). This session also pushes through an ephemeral local git proxy (`127.0.0.1:41729`) — a session artifact, not a durable asset.
-- **Deployed assets:** prosthetic-hand project (design docs, `cad/`, `firmware/`, `software/`, `build/`) + original Module9 coursework; branches `main` and `claude/flexible-prosthetic-hands-cmhdd6`.
-- **Authentication:** into GitHub via the owner's account; session writes use a scoped token through the proxy. Repo write ⇒ GitHub identity.
-- **Exposure / audience:** `UNKNOWN — needs input` whether the repo is **public or private**. This is the single most important unknown here — if public, all source (including firmware and EMG code) is world-readable.
+- **Technology:** Git; GitHub platform. Content: Markdown, Python, Arduino/C++, OpenSCAD, committed STL/PNG binaries. 47 tracked files, ~8 commits, single author, linear history.
+- **Hosting:** third-party (**GitHub**). Session pushes traverse an ephemeral local git proxy (`127.0.0.1:41729`) — a session artifact, not a durable asset.
+- **Deployed assets:** the prosthetic-hand project + Module9 coursework; branches `main` and `claude/flexible-prosthetic-hands-cmhdd6`; `.claude/` automation (this skill + workflow).
+- **Authentication:** into GitHub via the owner's account; session writes use a token brokered by the proxy (no credential stored in git config — userinfo is a bare `local_proxy@`).
+- **Exposure / audience:** `UNKNOWN — needs input` whether the repo is **public or private** (the single most important unknown). No running service is exposed; the surface is source/commit integrity + access control.
   - reachable by: internet (github.com), to whoever has repo visibility.
-- **Security mechanisms (in place):** git history/audit trail; GitHub account controls. No CI secrets (no `.github/` workflows exist).
-- **Common issues / misconfigurations for GitHub repos:** committed secrets/tokens in history; missing branch protection (force-push / history rewrite); unintended public exposure of private code; over-permissive collaborators; account without 2FA; Dependabot disabled; unsigned commits. (Actions-based risks like `pull_request_target` secret leakage are **N/A** — no Actions configured.)
+- **Security mechanisms (in place):** git history/audit trail; GitHub account controls; `.claude/settings.local.json` grants only a single narrow Bash permission (no broad grants).
+- **Common issues / misconfigurations for GitHub repos:** committed secrets; missing branch protection (force-push/history rewrite); unintended public exposure; over-permissive collaborators; account without 2FA; Dependabot off; unsigned commits.
 - **Known gaps / findings:**
-  - `medium` — repo visibility unconfirmed; if public, firmware + biometric-adjacent code is exposed. *(self-assessed)*
-  - `low` — no branch protection evident on the working branch; history could be force-rewritten. *(self-assessed)*
-  - `low` — no `SECURITY.md` / `CODEOWNERS` / signed commits. *(self-assessed)*
-  - `info` — **secret scan clean**: no API keys, tokens, private keys, `.env`, or credential files in any tracked file (scanned 2026-07-04). *(CONFIRMED)*
-- **Test cadence:** automated secret scanning on **every push**; repo-config + access review **quarterly**.
+  - `info` — **secret scan clean across ALL commits** (`git rev-list --all`): no keys/tokens/private-keys/`.env`/credential files. *(CONFIRMED)*
+  - `medium` — repo public/private status unconfirmed; if public, firmware + biometric-adjacent code is world-readable. *(needs input)*
+  - `low` — **git remote is plaintext HTTP** (`http://…`, both fetch & push); no transport TLS. Confined to the loopback proxy so real exposure is local-host only. *(CONFIRMED)*
+  - `low` — no branch protection / signed commits / `SECURITY.md` / `CODEOWNERS` evident; commit provenance rests entirely on GitHub-side account control. *(PLAUSIBLE)*
+  - `low` — **no CI/CD** (no `.github/workflows`): no automated secret-scan, dependency-audit, or branch gating runs on push. *(CONFIRMED)*
+- **Test cadence:** on **every push** — automated secret + dependency scan and firmware static analysis as a CI gate (**none exists today — stand one up**). **Quarterly** — manual repo-config/access review. **Blocking** security review before merging any wireless/OTA/network code.
 - **Criticality:** medium · **Test cost:** low
-- **Last reviewed:** 2026-07-04 · **Last assessed:** _pending workflow_
+- **Last reviewed:** 2026-07-04 · **Last assessed:** 2026-07-04 (workflow + manual)
 
 ---
 
@@ -52,22 +66,25 @@ means "not seen," not "assessed as safe."
 
 ### ESP32-S3 prosthetic-hand firmware
 - **Classification:** embedded / IoT — **safety-relevant** (drives a body-worn actuator)
-- **Technology:** Arduino C++ on ESP32-S3; UART half-duplex to a Feetech STS3215 serial-bus servo (`sts_servo.h`); ADC for MyoWare EMG; GPIO/MOSFET for vacuum pump + solenoid. Planned: TFLite-Micro EMG model, wireless telemetry.
+- **Technology:** Arduino C++ on ESP32-S3; UART half-duplex to a Feetech STS3215 servo (`sts_servo.h`, 1 Mbaud); ADC for MyoWare EMG; GPIO/MOSFET for pump + solenoid. Planned: TFLite-Micro EMG model, wireless telemetry.
 - **Hosting:** self-hosted on the device (physical / ephemeral).
-- **Deployed assets:** `firmware/prosthetic_hand/prosthetic_hand.ino` (100 Hz control loop, grasp FSM), `sts_servo.h` (bus driver), the serial command protocol (`o c g j v e ?`).
-- **Authentication:** **NONE.** The serial command interface (115200 baud) is unauthenticated — anyone on the USB/serial line can open/close/grip/jam the hand. The STS3215 bus is likewise unauthenticated. WiFi/BLE radios are present on the SoC but **not enabled** in the current firmware.
-- **Exposure / audience:** `physical-only` **today** (USB serial + idle radios). ⚠️ If the roadmap's wireless telemetry lands, exposure escalates to `RF / network` and this becomes remotely reachable.
-  - reachable by: anyone with physical/USB access now; RF range if radios are enabled later.
-- **Security mechanisms (in place):** **fail-soft on brown-out** — servo torque-off → hand goes passively compliant rather than clamping (a real safety property, see `architecture.md §7`); load/duty limiting; double-pulse-to-open guard against accidental release; bus-reply handling in `sts_servo.h` is bounded (`buf[got++]` gated by `got<8`), checksum-validated, and timeout-guarded.
-- **Common issues / vuln classes for ESP32:** no secure boot / flash encryption ⇒ firmware dump/replace over USB/JTAG; unauthenticated serial/BLE; unsigned OTA; hardcoded WiFi creds; BLE "just-works" pairing; JTAG left enabled; heap fragmentation from `String` use in hot loops (availability).
-- **Known gaps / findings:**
-  - `high` *(in context)* — unauthenticated control of a **body-worn actuator** over the serial interface. Mitigated only by physical access today; becomes serious the moment any radio is enabled. *(self-assessed)*
-  - `medium` — no firmware signing / secure boot / flash encryption; firmware can be extracted or replaced via USB. *(self-assessed)*
-  - `low` — serial command parser uses `String`/`readStringUntil` in the 100 Hz loop; heap fragmentation is an availability (not memory-safety) concern. *(self-assessed)*
-  - `low / latent` — idle WiFi/BLE radios are future RF attack surface; treat enabling them as a security-relevant change. *(self-assessed)*
-- **Test cadence:** threat-model + code review on **every firmware change touching I/O, parsing, or radios**; a dedicated hardware/RF security test **before any wireless feature ships**; otherwise **annual** review.
-- **Criticality:** high · **Test cost:** medium (needs hardware)
-- **Last reviewed:** 2026-07-04 · **Last assessed:** _pending workflow_
+- **Deployed assets:** `prosthetic_hand.ino` (100 Hz grasp FSM), `sts_servo.h` (bus driver), serial command protocol (`o c g j v e ?`), GPIO7 override button.
+- **Authentication:** **NONE** on the serial command interface (USB-CDC, 115200) or the STS3215 bus. WiFi/BLE radios exist on the SoC but are **not enabled**.
+- **Exposure / audience:** `physical-only` — **CONFIRMED**: firmware calls only `Serial.begin`/`Serial1.begin`, includes only `<Arduino.h>` + `sts_servo.h`, and a grep for `wifi|ble|esp_now|ota|tcp|udp|http|mqtt|socket` returns zero matches. ⚠️ Enabling any radio (roadmap Phase 5) escalates this to remote/RF.
+  - reachable by: anyone with physical/USB access (full unauthenticated actuation) or the GPIO7 button; RF range only if radios are later enabled.
+- **Security mechanisms (in place):** **fail-soft on brown-out** (servo torque-off → passive compliance, not clamp); grip/overload/jam load limits + `constrain(pct,0,100)` clamp; double-pulse-to-open guard; bus replies are checksum-validated, length-bounded (`buf[got++]` gated by `got<8`), and timeout-guarded; command parser input is bounded/safe (no overflow found).
+- **Known gaps / findings (most severe first):**
+  - `high` — **unauthenticated control of a body-worn actuator** over serial; any connected host/process gets full open/close/grip/jam control. Acceptable only under the physical-only model; must gain an auth/authorization layer before any radio path. *(CONFIRMED)*
+  - `medium → RESOLVED 2026-07-04` — **blocking serial read stalled the 100 Hz safety loop** for up to 1 s (`Serial.readStringUntil('\n')` on a partial line). **Fixed**: replaced with non-blocking, bounded, per-byte line accumulation (`serialIntent()` + `dispatchCommand()`). *(CONFIRMED, fixed)*
+  - `medium` — **grasp FSM trusts unauthenticated servo-bus load values**; a forged/implausible `present_load` directly drives crush-force decisions. Recommend clamping/rate-limiting physically-implausible load jumps between reads. *(CONFIRMED)*
+  - `medium` — **no hardware root of trust**: Secure Boot v2 / flash encryption disabled, ROM download + JTAG at defaults ⇒ firmware dump/tamper/replace over USB; every in-firmware safety limit is bypassable by reflash. Enable before any field/clinical build. *(PLAUSIBLE — platform default)*
+  - `medium` — **no authorization tiers**: read-only (`?`), actuation (`c/o/g/j/v`), and mode-change share one (absent) trust level. Split read-only vs control. *(CONFIRMED)*
+  - `medium` — **planned wireless has no auth/pairing design**; treat radio enablement as a gated, security-reviewed change (BLE bonded pairing w/ MITM protection, signed OTA). *(PLAUSIBLE — future)*
+  - `low` — **build toolchain unpinned** (ESP32 Arduino core version is prose-only); add a `platformio.ini`/`sketch.yaml` pinning core + board for reproducible builds. *(CONFIRMED)*
+  - `low` — `String` use in the hot loop is a minor heap-fragmentation (availability) concern. *(self-assessed)*
+- **Test cadence:** **every firmware push/PR** — static analysis (`cppcheck`/`clang-tidy`, `-Wall -Wextra`) + human review of FSM safety bounds (GRIP/OVERLOAD/JAM thresholds, vent paths). **Before fitting to a person / per release** — hardware-in-the-loop fault injection + measured crush-force test. **On any bootloader/provisioning change** — eFuse/Secure-Boot verification. **Quarterly** — host dependency scan + threat-model review. **Annually, and mandatory before any wireless feature** — independent security + safety review.
+- **Criticality:** high · **Test cost:** low (static/review) → medium (hardware tests)
+- **Last reviewed:** 2026-07-04 · **Last assessed:** 2026-07-04 (workflow + manual)
 
 ---
 
@@ -75,20 +92,20 @@ means "not seen," not "assessed as safe."
 
 ### EMG Python toolchain
 - **Classification:** local tooling / software supply chain
-- **Technology:** Python 3.11+; `pyserial`, `numpy`, `scikit-learn` (`software/requirements.txt`).
-- **Hosting:** self-hosted on the operator's machine; **no network listener** (local-only).
+- **Technology:** Python 3.11+; `pyserial`, `numpy`, `scikit-learn` (`software/requirements.txt`). Also OpenSCAD + `render_all.sh` (local build helpers).
+- **Hosting:** self-hosted on the operator's machine; **no network listener**.
 - **Deployed assets:** `emg_collect.py`, `cycle_test.py` (serial → CSV), `emg_train.py` (CSV → RandomForest + thresholds).
-- **Authentication:** none required; serial-port and filesystem access are OS-mediated.
-- **Exposure / audience:** `local-only`. reachable by: the local user only.
-- **Security mechanisms (in place):** per-line bounded reads; serial parsing wrapped in `try/except ValueError` (bad lines skipped); `software/.gitignore` keeps `data/` out of git.
-- **Common issues / vuln classes:** dependency supply-chain (loose version bounds ⇒ typosquat / compromised-package exposure at `pip install`; numpy/sklearn pull large transitive trees); parsing untrusted input from a possibly-faulty/malicious serial device; unsafe model deserialization (**not present yet** — flag for when trained models get persisted; prefer `joblib`/`skops` over raw `pickle` from untrusted sources); `pip install` as root.
+- **Authentication:** none required; serial-port + filesystem access are OS-mediated.
+- **Exposure / audience:** `local-only` — **CONFIRMED** (grep across `*.py/*.sh/*.ino/*.h`: zero sockets/binds/listeners). reachable by: any local process with OS permission on the serial tty and the data files.
+- **Security mechanisms (in place):** defensive parsing — `decode(errors='ignore')`, length checks, `try/except` on `int()` (bad lines skipped); `software/.gitignore` excludes `data/`.
 - **Known gaps / findings:**
-  - `medium` — `requirements.txt` uses `>=` lower bounds, not hash-pinned; supply-chain integrity depends on PyPI at install time. *(self-assessed)*
-  - `low` — `numpy.genfromtxt` trusts CSV shape from a device-fed file. *(self-assessed)*
-  - `info` — future model persistence should avoid loading untrusted pickles. *(self-assessed)*
-- **Test cadence:** automated dependency scan (`pip-audit`) on **every change to `requirements.txt`** + **monthly**; review input-parsing when adding model load/save.
-- **Criticality:** low-medium · **Test cost:** low
-- **Last reviewed:** 2026-07-04 · **Last assessed:** _pending workflow_
+  - `medium` — **dependencies unpinned, no hashes, no lockfile** (`>=` lower bounds) ⇒ dependency-confusion / typosquat / version-drift; builds not reproducible. Pin exact versions + hashes (`pip-compile --generate-hashes`) and add `pip-audit`/Dependabot. *(CONFIRMED)*
+  - `low` — **path traversal via `--label`**: `f'{outdir}/{label}.csv'` is unsanitized, so a crafted label can write outside `outdir`. Local operator-supplied arg (low), but add a basename/whitelist guard. *(CONFIRMED)*
+  - `low` — **host tools trust any device on the port**; no device-identity check. Pin expected USB VID/PID (`serial.tools.list_ports`) or a firmware identity handshake. *(CONFIRMED)*
+  - `info` — `numpy.genfromtxt` trusts device-fed CSV shape; future model persistence must avoid untrusted `pickle`. *(self-assessed)*
+- **Test cadence:** automated dependency + toolchain scan on **every dependency change** and **weekly**; a **one-time hardening pass now** (hash-locked lockfile, pin OpenSCAD/core, add the traversal guard); **quarterly** manual supply-chain review + after any major bump.
+- **Criticality:** medium · **Test cost:** low
+- **Last reviewed:** 2026-07-04 · **Last assessed:** 2026-07-04 (workflow + manual)
 
 ---
 
@@ -98,16 +115,15 @@ means "not seen," not "assessed as safe."
 - **Classification:** data / privacy
 - **Technology:** CSV telemetry (`millis,emg_raw,emg_env,state,servo_pos,servo_load,jammed`).
 - **Hosting:** local files under `software/data/` (**gitignored**).
-- **Authentication:** OS file permissions.
-- **Exposure / audience:** `local-only`; **not committed** to git (good).
-- **Security mechanisms (in place):** `.gitignore` excludes `data/`, so biometric traces don't enter git history.
-- **Common issues:** surface-EMG is **biometric / health-adjacent** data. If ever collected from **real subjects**, it carries regulatory weight (GDPR special-category; HIPAA-adjacent in clinical use) ⇒ needs consent, data minimization, encryption at rest, and retention limits. Risks: accidental commit if `.gitignore` is edited; no encryption at rest.
+- **Authentication:** OS file permissions only.
+- **Exposure / audience:** `local-only`; **not committed** to git (CONFIRMED). Any local process with read access can read the unencrypted traces.
+- **Security mechanisms (in place):** `.gitignore` keeps `data/` out of git history.
 - **Known gaps / findings:**
-  - `low now / high if real subjects` — no consent / retention / encryption framework; currently only the developer's own signals. *(self-assessed)*
-  - `info` — keep `software/.gitignore`'s `data/` rule intact; verify on changes. *(self-assessed)*
-- **Test cadence:** privacy/DPIA review **before any real-subject collection**; verify `.gitignore` on **every change under `software/`**.
+  - `medium` — **plaintext biometric (EMG) at rest**: no encryption, access control, or retention policy. Surface-EMG is biometric/health-adjacent (GDPR special-category; HIPAA-adjacent clinically). Encrypt at rest (or encrypted volume), define retention/erasure, and require consent **before any real-subject collection**. *(CONFIRMED — design-level)*
+  - `info` — keep `software/.gitignore`'s `data/` rule intact; verify on changes to avoid accidental commit. *(self-assessed)*
+- **Test cadence:** privacy/DPIA review **before any real-subject collection**; verify `.gitignore` on **every change under `software/`**; revisit encryption/retention when data leaves the dev machine.
 - **Criticality:** low now / high if real users · **Test cost:** low
-- **Last reviewed:** 2026-07-04 · **Last assessed:** _pending workflow_
+- **Last reviewed:** 2026-07-04 · **Last assessed:** 2026-07-04 (workflow + manual)
 
 ---
 
@@ -134,4 +150,5 @@ _Fill these in as systems come into scope. Empty ≠ safe; empty = not yet inven
 ## Maintenance log
 | Date | Change | Trigger |
 |---|---|---|
-| 2026-07-04 | Initial inventory: 4 evidenced surfaces (GitHub repo, ESP32-S3 firmware, EMG toolchain, EMG data) + external-category placeholders. Self-assessed findings pending `AssessAttackSurface` verification. | attack-surface skill bootstrap |
+| 2026-07-04 | Initial inventory: 4 evidenced surfaces + external-category placeholders. | attack-surface skill bootstrap |
+| 2026-07-04 | Folded in `AssessAttackSurface` results (83-agent run) + manual cross-check: verified exposures (all physical/local-only), secret-clean history, plaintext-HTTP remote, servo-bus trust, no secure boot, no auth tiers, unpinned deps/toolchain, `--label` path traversal, plaintext biometric at rest; set per-surface cadences. **Fixed** the blocking-serial-read safety-loop stall in firmware. | assessment |

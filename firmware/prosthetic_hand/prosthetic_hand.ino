@@ -155,10 +155,7 @@ void fsmStep(int intent) {
   servo.setGoalPosition(goalPos);
 }
 
-int serialIntent() {
-  if (!Serial.available()) return 0;
-  String cmd = Serial.readStringUntil('\n');
-  cmd.trim();
+int dispatchCommand(const String &cmd) {
   if (cmd == "c") return +1;
   if (cmd == "o") return -1;
   if (cmd == "j") { jamStart(); return 0; }
@@ -179,6 +176,32 @@ int serialIntent() {
     Serial.printf("# state=%s pos=%d load=%d jammed=%d emg=%d\n",
                   STATE_NAMES[state], servo.presentPosition(),
                   servo.presentLoad(), jammed, emgMode);
+  return 0;
+}
+
+// Non-blocking command reader. Accumulates bytes into a bounded buffer and
+// only dispatches on a complete line — NEVER blocks the 100 Hz control loop
+// waiting for a newline (a partial/withheld serial line must not stall an
+// actuator strapped to a limb). Oversized lines are dropped, not overflowed.
+int serialIntent() {
+  static char buf[24];
+  static uint8_t len = 0;
+  while (Serial.available()) {
+    char ch = Serial.read();
+    if (ch == '\n' || ch == '\r') {
+      if (len == 0) continue;          // ignore blank lines / CRLF pairs
+      buf[len] = '\0';
+      String cmd(buf);
+      len = 0;
+      cmd.trim();
+      int intent = dispatchCommand(cmd);
+      if (intent != 0) return intent;  // surface open/close immediately
+    } else if (len < sizeof(buf) - 1) {
+      buf[len++] = ch;
+    } else {
+      len = 0;                         // overrun guard: discard the line
+    }
+  }
   return 0;
 }
 

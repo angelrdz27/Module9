@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Novo Nordisk — Global Employer Brand Analysis</title>
+<style>
+  :root{
+    --navy:#0B1F4B;
+    --navy-2:#12306E;
+    --accent:#1E5AE8;
+    --accent-soft:#E8EEFB;
+    --ink:#1A2233;
+    --muted:#5B6474;
+    --faint:#8A93A6;
+    --hairline:#E3E7EF;
+    --surface:#FFFFFF;
+    --canvas:#F4F6FA;
+    --gold:#C9A227;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:"Helvetica Neue",Helvetica,Arial,"Segoe UI",system-ui,sans-serif;
+    background:#0A1330;
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  #deck{
+    width:1280px;height:720px;position:relative;
+    transform-origin:center center;
+  }
+  .slide{
+    position:absolute;inset:0;background:var(--surface);
+    display:none;flex-direction:column;
+    padding:52px 64px 0;
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .slide.active{display:flex;}
+
+  /* ---------- Header ---------- */
+  .kicker{
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin-bottom:10px;
+  }
+  h1.title{
+    font-size:38px;line-height:1.1;color:var(--navy);
+    font-weight:700;letter-spacing:-0.01em;margin-bottom:14px;
+  }
+  .core-msg{
+    font-size:15.5px;line-height:1.5;color:var(--muted);
+    max-width:1010px;margin-bottom:26px;
+  }
+  .core-msg b{color:var(--ink);}
+  .headrule{height:3px;width:56px;background:var(--accent);border-radius:2px;margin-bottom:18px;}
+  .body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;}
+
+  /* ---------- Footer ---------- */
+  .foot{
+    margin-top:auto;
+    border-top:1px solid var(--hairline);
+    padding:14px 0 18px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .foot .tag{
+    font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:#fff;background:var(--navy);border-radius:3px;padding:4px 9px;white-space:nowrap;
+  }
+  .foot p{font-size:13px;color:var(--muted);line-height:1.4;}
+  .foot p b{color:var(--ink);}
+
+  /* ---------- KPI tiles ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .kpi{
+    background:var(--canvas);border:1px solid var(--hairline);border-radius:8px;
+    padding:16px 18px 14px;
+  }
+  .kpi .v{font-size:31px;font-weight:700;color:var(--navy);letter-spacing:-0.02em;line-height:1;}
+  .kpi .v span{font-size:15px;color:var(--faint);font-weight:600;}
+  .kpi .l{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.35;}
+
+  /* ---------- Tables ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    text-align:left;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--faint);font-weight:700;padding:0 12px 8px;border-bottom:2px solid var(--navy);
+  }
+  tbody td{padding:9px 12px;border-bottom:1px solid var(--hairline);color:var(--muted);line-height:1.35;vertical-align:top;}
+  tbody td:first-child{color:var(--ink);font-weight:700;}
+  tbody tr.hl{background:var(--accent-soft);}
+  tbody tr.hl td{color:var(--navy);}
+  tbody tr.hl td:first-child{color:var(--navy);}
+  td.num{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);}
+
+  /* ---------- Cards ---------- */
+  .cards{display:grid;gap:16px;}
+  .c2{grid-template-columns:repeat(2,1fr);}
+  .c3{grid-template-columns:repeat(3,1fr);}
+  .c4{grid-template-columns:repeat(4,1fr);}
+  .card{
+    background:var(--canvas);border:1px solid var(--hairline);border-radius:8px;
+    padding:18px 20px;display:flex;flex-direction:column;
+  }
+  .card.accent{background:var(--accent-soft);border-color:#C9D8F7;}
+  .card .idx{
+    font-size:11px;font-weight:700;letter-spacing:.16em;color:var(--accent);
+    text-transform:uppercase;margin-bottom:8px;
+  }
+  .card h3{font-size:15.5px;color:var(--navy);font-weight:700;margin-bottom:8px;line-height:1.25;}
+  .card p{font-size:12.5px;line-height:1.5;color:var(--muted);}
+  .card p b{color:var(--ink);}
+  .card .stat{font-size:22px;font-weight:700;color:var(--navy);margin-bottom:4px;letter-spacing:-0.01em;}
+
+  ul.bullets{list-style:none;}
+  ul.bullets li{
+    font-size:13.5px;color:var(--muted);line-height:1.5;
+    padding-left:18px;position:relative;margin-bottom:10px;
+  }
+  ul.bullets li::before{
+    content:"";position:absolute;left:0;top:8px;width:7px;height:7px;
+    border-radius:2px;background:var(--accent);
+  }
+  ul.bullets b{color:var(--ink);}
+
+  .quote{
+    border-left:3px solid var(--accent);background:var(--canvas);
+    border-radius:0 8px 8px 0;padding:13px 16px;margin-bottom:12px;
+  }
+  .quote .q{font-size:14.5px;font-weight:700;color:var(--navy);line-height:1.3;margin-bottom:4px;}
+  .quote .a{font-size:12px;color:var(--muted);line-height:1.45;}
+
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:32px;}
+  .colhead{
+    font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--faint);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--navy);
+  }
+
+  /* ---------- Roadmap ---------- */
+  .roadmap{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;margin-bottom:22px;}
+  .phase{padding:0 14px;position:relative;}
+  .phase + .phase{border-left:1px solid var(--hairline);}
+  .phase .ph-no{
+    width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;margin-bottom:10px;
+  }
+  .phase h3{font-size:14px;color:var(--navy);font-weight:700;line-height:1.3;margin-bottom:6px;}
+  .phase .ph-sub{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+  .phase p{font-size:12px;color:var(--muted);line-height:1.5;}
+  .phase p b{color:var(--ink);}
+  .phase .out{
+    margin-top:10px;font-size:11.5px;color:var(--navy);font-weight:600;
+    background:var(--accent-soft);border-radius:5px;padding:7px 10px;line-height:1.35;
+  }
+
+  /* ---------- Cover header band (slide 1) ---------- */
+  .brandline{
+    display:flex;justify-content:space-between;align-items:baseline;margin-bottom:22px;
+  }
+  .brandline .co{font-size:13px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);}
+  .brandline .doc{font-size:11.5px;color:var(--faint);letter-spacing:.06em;}
+
+  /* ---------- Chrome (nav) ---------- */
+  #chrome{
+    position:absolute;left:0;right:0;bottom:-46px;height:38px;
+    display:flex;align-items:center;justify-content:space-between;
+    color:#8FA0C9;font-size:12px;user-select:none;
+  }
+  #chrome .btns{display:flex;gap:8px;}
+  #chrome button{
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
+    color:#D7DFF3;width:34px;height:28px;border-radius:6px;cursor:pointer;
+    font-size:14px;line-height:1;
+  }
+  #chrome button:hover{background:rgba(255,255,255,.16);}
+  #dots{display:flex;gap:7px;}
+  #dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.22);cursor:pointer;}
+  #dots span.on{background:#FFFFFF;}
+  #progress{position:absolute;left:0;top:0;height:3px;background:var(--accent);border-radius:6px 0 0 0;transition:width .25s ease;z-index:5;}
+  .pageno{
+    position:absolute;right:64px;top:52px;font-size:12px;color:var(--faint);
+    font-variant-numeric:tabular-nums;letter-spacing:.08em;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="deck">
+    <div id="progress"></div>
+
+    <!-- ================= SLIDE 1 ================= -->
+    <section class="slide active">
+      <div class="brandline">
+        <div class="co">Novo Nordisk · Employer Brand Benchmark</div>
+        <div class="doc">Global Analysis &amp; Strategic Benchmarking &nbsp;·&nbsp; 01 / 08</div>
+      </div>
+      <div class="kicker">Global Overview & Brand Perception</div>
+      <h1 class="title">Executive Summary & Positioning</h1>
+      <p class="core-msg">A <b>dominant talent magnet</b> in global life sciences — built on <b>foundation-backed governance</b>, a patient-centric mission, and a <b>high-trust leadership model</b> driving industry-leading advocacy and retention.</p>
+
+      <div class="body">
+      <div class="kpis">
+        <div class="kpi"><div class="v">4.2<span> / 5</span></div><div class="l"><b>Glassdoor rating</b> — top of global pharma</div></div>
+        <div class="kpi"><div class="v">94%</div><div class="l"><b>CEO approval</b> — Lars Fruergaard Jørgensen</div></div>
+        <div class="kpi"><div class="v">84%</div><div class="l"><b>Employee recommendation</b> rate</div></div>
+        <div class="kpi"><div class="v">69,000+</div><div class="l">Employees · <b>80+ countries</b> · 13 plants · 10 R&amp;D centers</div></div>
+      </div>
+
+      <table>
+        <thead><tr><th>Company</th><th>Glassdoor</th><th>CEO Approval</th><th>Recommend</th><th>Strategic Positioning Trait</th></tr></thead>
+        <tbody>
+          <tr class="hl"><td>Novo Nordisk</td><td class="num">4.2</td><td class="num">94%</td><td class="num">84%</td><td><b>Foundation-backed long-termism</b> &amp; chronic-care purpose</td></tr>
+          <tr><td>Roche</td><td class="num">4.2</td><td class="num">88%</td><td class="num">84%</td><td>Diagnostics &amp; personalized medicine leader</td></tr>
+          <tr><td>Boehringer Ingelheim</td><td class="num">4.1</td><td class="num">86%</td><td class="num">82%</td><td>Top Employer, family-owned heritage</td></tr>
+          <tr><td>Johnson &amp; Johnson</td><td class="num">4.1</td><td class="num">84%</td><td class="num">82%</td><td>Diversified global healthcare scale</td></tr>
+          <tr><td>Eli Lilly</td><td class="num">4.0</td><td class="num">89%</td><td class="num">79%</td><td>High innovation focus in metabolic health</td></tr>
+        </tbody>
+      </table>
+
+      </div>
+
+      <div class="foot">
+        <div class="tag">Takeaway</div>
+        <p><b>Anchor the employer brand in structural governance</b> — and promote leadership trust (94%) as a talent attraction vector for authenticity and psychological safety.</p>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 2 ================= -->
+    <section class="slide">
+      <div class="pageno">02 / 08</div>
+      <div class="kicker">Employee Value Proposition</div>
+      <h1 class="title">EVP & The Novo Nordisk Way</h1>
+      <p class="core-msg">The EVP fuses <b>individual career acceleration</b> with the corporate mission — <b>defeating serious chronic diseases</b> — backed by the explicit behavioral standards of <b>"The Novo Nordisk Way."</b></p>
+
+      <div class="body">
+      <div class="cards c3" style="margin-bottom:18px;">
+        <div class="card">
+          <div class="idx">Pillar 01</div>
+          <h3>Pioneering Patient Impact</h3>
+          <p>Daily work connects directly to <b>life-changing breakthroughs</b> for <b>45M+ people</b> living with diabetes, obesity, and rare disorders.</p>
+        </div>
+        <div class="card">
+          <div class="idx">Pillar 02</div>
+          <h3>Unordinary Warmth & Agility</h3>
+          <p><b>Flat hierarchies</b> give employees confidence to decide fast, act with agility, and <b>experiment without perfectionism</b>.</p>
+        </div>
+        <div class="card">
+          <div class="idx">Pillar 03</div>
+          <h3>Triple Bottom Line</h3>
+          <p>Financial performance balanced with <b>environmental and social accountability</b>, embedded in workplace culture.</p>
+        </div>
+      </div>
+
+      <div class="colhead">Operationalizing culture — "The 10 Essentials" (selected)</div>
+      <table>
+        <thead><tr><th>Essential</th><th>Behavioral Requirement</th><th>Talent Experience Impact</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Patient-Centered Value</td><td>Every decision must <b>create value for patients</b></td><td>Links individual work to societal impact</td></tr>
+          <tr><td>2 · Ambition & Empowerment</td><td>Employees set and achieve <b>bold objectives</b></td><td>Entrepreneurial autonomy in a global matrix</td></tr>
+          <tr><td>9 · Agility & Simplicity</td><td>Eliminate <b>unnecessary complexity</b></td><td>Streamlined workflows, reduced burnout</td></tr>
+          <tr><td>10 · Uncompromised Ethics</td><td>Never compromise on <b>quality and ethics</b></td><td>Attracts purpose-driven, ESG-focused talent</td></tr>
+        </tbody>
+      </table>
+
+      </div>
+
+      <div class="foot">
+        <div class="tag">Takeaway</div>
+        <p><b>Codify values into actionable behaviors</b> — and embed societal purpose directly into core workflows to drive intrinsic motivation and retention.</p>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 3 ================= -->
+    <section class="slide">
+      <div class="pageno">03 / 08</div>
+      <div class="kicker">Value Proposition Messaging</div>
+      <h1 class="title">Key Messaging Framework</h1>
+      <p class="core-msg">Purpose translated into functional hooks that reframe career progression as <b>personal contribution to systemic healthcare transformation</b>.</p>
+
+      <div class="body">
+      <div class="cards c3" style="margin-bottom:20px;">
+        <div class="quote" style="margin-bottom:0;">
+          <div class="q">"Together we drive change"</div>
+          <div class="a">A proactive <b>market disrupter</b> — driving change through collective effort, not waiting for it.</div>
+        </div>
+        <div class="quote" style="margin-bottom:0;">
+          <div class="q">"We're in it for life"</div>
+          <div class="a"><b>No shortcuts</b> — scientific thoroughness and ethics over quick commercial wins.</div>
+        </div>
+        <div class="quote" style="margin-bottom:0;">
+          <div class="q">"Where unordinary drives change"</div>
+          <div class="a">Celebrates <b>non-traditional thinking</b> and inclusive, curious problem-solving.</div>
+        </div>
+      </div>
+
+      <ul class="bullets" style="margin-bottom:16px;">
+        <li><b>Career impact is reframed</b> — success is measured by expanding influence across <b>patient lives, sustainability milestones, and scientific innovation</b>, not vertical hierarchy.</li>
+      </ul>
+
+      <div class="colhead">Segmented messaging architecture</div>
+      <table>
+        <thead><tr><th>Talent Segment</th><th>Narrative Hook</th><th>Core Value Drivers</th><th>Proof Points</th></tr></thead>
+        <tbody>
+          <tr><td>R&amp;D & Scientific</td><td>"Working towards the next breakthrough"</td><td>Elite facilities, academic freedom</td><td><b>DKK 82bn+</b> R&amp;D spend · 10 global centers</td></tr>
+          <tr><td>Manufacturing & Ops</td><td>"Prolonging the life of our planet"</td><td>Sustainable production, circular economy</td><td><b>85% renewable energy</b> · zero-emission targets</td></tr>
+          <tr><td>Commercial & Corporate</td><td>"Defeating serious chronic diseases"</td><td>Market leadership, patient access, ethics</td><td><b>45M+ patients</b> · NovoCare Affordability</td></tr>
+        </tbody>
+      </table>
+
+      </div>
+
+      <div class="foot">
+        <div class="tag">Takeaway</div>
+        <p><b>Segment messaging by functional archetype</b> — and validate every brand hook with hard operational metrics to ensure credibility.</p>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 4 ================= -->
+    <section class="slide">
+      <div class="pageno">04 / 08</div>
+      <div class="kicker">Career Site UX & Architecture</div>
+      <h1 class="title">Career Site & Conversion Design</h1>
+      <p class="core-msg">A <b>hub-and-spoke digital strategy</b>: global employer-brand storytelling routed into <b>localized conversion pathways</b> and self-service transparency tools.</p>
+
+      <div class="body">
+      <div class="cards c4" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="idx">Search & Discovery</div>
+          <div class="stat">465+</div>
+          <p><b>Live roles</b> with dynamic counters and functional / geographic filters — lowering friction, accelerating conversion.</p>
+        </div>
+        <div class="card">
+          <div class="idx">Regional Localization</div>
+          <div class="stat">Hub &amp; Spoke</div>
+          <p>Dedicated <b>local portals</b> (US, UK, Australia, Gulf) for compliance and benefits clarity — without brand fragmentation.</p>
+        </div>
+        <div class="card">
+          <div class="idx">Candidate Self-Service</div>
+          <div class="stat">Trust First</div>
+          <p><b>Application status tracking</b>, fraud alerts, job-alert subscriptions, and a dedicated Graduate Programme pathway.</p>
+        </div>
+        <div class="card">
+          <div class="idx">ESG Integration</div>
+          <div class="stat">One Click</div>
+          <p>Direct links to the <b>ESG Portal</b>, Annual Reports, and OneCode ethics — validating values for high-intent candidates.</p>
+        </div>
+      </div>
+
+      <ul class="bullets">
+        <li><b>Global portal sets identity and purpose</b>, then seamlessly routes applicants to tailored regional career sites.</li>
+        <li><b>Proactive trust building</b> — visible security disclosures and recruitment-fraud warnings placed in primary navigation.</li>
+        <li><b>Purpose navigation</b> bridges talent attraction with corporate sustainability and business-ethics documentation.</li>
+      </ul>
+
+      </div>
+
+      <div class="foot">
+        <div class="tag">Takeaway</div>
+        <p><b>Deploy a localized hub-and-spoke career hub</b> — and integrate self-service tracking, transparency statements, and security notices into core navigation.</p>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 5 ================= -->
+    <section class="slide">
+      <div class="pageno">05 / 08</div>
+      <div class="kicker">Employee Storytelling & Social Media</div>
+      <h1 class="title">Storytelling & Social Presence</h1>
+      <p class="core-msg">Complex science is humanized through <b>authentic employee narratives</b> — with <b>diversity positioned as a catalyst for innovation</b>, not a compliance program.</p>
+
+      <div class="body">
+      <div class="cards c3" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="idx">Spotlight · Rare Disease</div>
+          <h3>Ronja Mathiesen</h3>
+          <p>Her daughter's rare bleeding disorder gives her a <b>personal connection and sense of purpose</b> — humanizing R&amp;D through authentic mission alignment.</p>
+        </div>
+        <div class="card">
+          <div class="idx">Spotlight · Innovation</div>
+          <h3>Gene Cheung</h3>
+          <p><b>Cognitive diversity</b> and varied perspectives framed as essential to developing novel treatments — <b>DEIB as an operational innovation engine</b>.</p>
+        </div>
+        <div class="card">
+          <div class="idx">Spotlight · Operations</div>
+          <h3>Global Teams</h3>
+          <p>International manufacturing &amp; supply-chain teams showing <b>global career mobility</b> and a collaborative, team-first culture.</p>
+        </div>
+      </div>
+
+      <ul class="bullets">
+        <li><b>Peer stories over corporate promotion</b> — employee profiles lead the narrative, not marketing language.</li>
+        <li><b>Multi-format video content</b> from global R&amp;D and manufacturing hubs gives candidates an authentic view of daily culture.</li>
+        <li><b>Visible Employee Resource Groups</b> let applicants assess workplace inclusivity before applying.</li>
+      </ul>
+
+      </div>
+
+      <div class="foot">
+        <div class="tag">Takeaway</div>
+        <p><b>Elevate personal mission alignment</b> in employee stories — and frame diversity as a driver of scientific discovery and problem-solving.</p>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 6 ================= -->
+    <section class="slide">
+      <div class="pageno">06 / 08</div>
+      <div class="kicker">Total Rewards, Benefits & Talent Philosophy</div>
+      <h1 class="title">Total Rewards & Work-Life</h1>
+      <p class="core-msg"><b>"Different lives value different benefits"</b> — transparent global compensation principles combined with localized life-stage benefits and <b>sustainability as non-monetary value</b>.</p>
+
+      <div class="body">
+      <div class="cards c4" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="idx">Well-Being</div>
+          <h3>Holistic Health</h3>
+          <p>Flexible work &amp; proactive wellness — <b>Best Employee Well-Being Programs (2024)</b>, Britain's Healthiest Workplace (2023).</p>
+        </div>
+        <div class="card">
+          <div class="idx">Transparency</div>
+          <h3>Reward Clarity</h3>
+          <p><b>Upfront compensation principles</b> during recruitment — eliminating candidate friction at offer stage.</p>
+        </div>
+        <div class="card">
+          <div class="idx">Environment</div>
+          <h3>Circular for Zero</h3>
+          <p><b>85% renewable electricity</b> in production; targeting <b>zero CO₂ transport emissions by 2030</b>.</p>
+        </div>
+        <div class="card">
+          <div class="idx">Social Impact</div>
+          <h3>NovoCare Access</h3>
+          <p><b>5.5M+ US patients</b> reached with affordable therapies in 2025 — fueling internal pride and retention.</p>
+        </div>
+      </div>
+
+      <ul class="bullets">
+        <li><b>Localized life-stage benefits</b> — from parental support to mental health resources — under fully transparent global reward processes.</li>
+        <li>A culture of <b>flexibility, psychological safety, and mutual support</b> ("an unordinary sense of warmth") validates high work-life scores.</li>
+      </ul>
+
+      </div>
+
+      <div class="foot">
+        <div class="tag">Takeaway</div>
+        <p><b>Surface reward principles early</b> in hiring — and position ESG milestones and patient-affordability programs as non-monetary elements of total value.</p>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 7 ================= -->
+    <section class="slide">
+      <div class="pageno">07 / 08</div>
+      <div class="kicker">Differentiators & Talent Magnet Factors</div>
+      <h1 class="title">Differentiators & Talent Magnets</h1>
+      <p class="core-msg"><b>Foundation-backed stability</b>, massive R&amp;D reinvestment, and a supportive <b>Scandinavian culture of trust</b> set the company apart from the industry standard.</p>
+
+      <div class="body">
+      <table style="margin-bottom:20px;">
+        <thead><tr><th>Differentiation Vector</th><th>Standard Industry Practice</th><th>Novo Nordisk Advantage</th></tr></thead>
+        <tbody>
+          <tr><td>Corporate Governance</td><td>Short-term, quarter-by-quarter investor pressure</td><td><b>Foundation ownership</b> securing long-term operational stability</td></tr>
+          <tr><td>R&amp;D Capital Allocation</td><td>Budgets fluctuate with immediate financial results</td><td>Sustained <b>DKK 82bn+ R&amp;D spend</b> across 10 global hubs</td></tr>
+          <tr><td>Workplace Environment</td><td>High-pressure, transactional corporate culture</td><td><b>"Unordinary warmth"</b> — empowerment, agility, flat structures</td></tr>
+          <tr><td>Performance Framework</td><td>Financial metrics outweigh social impact</td><td><b>Triple Bottom Line</b> in the Articles of Association</td></tr>
+        </tbody>
+      </table>
+
+      <div class="cards c3">
+        <div class="card accent">
+          <h3>The Governance Shield</h3>
+          <p>Foundation majority ownership assures talent that <b>strategic projects and career paths won't be disrupted</b> by short-term headwinds.</p>
+        </div>
+        <div class="card accent">
+          <h3>Scale of Scientific Investment</h3>
+          <p><b>DKK 82bn+ reinvested annually</b> across 10 global centers — world-class resources and <b>funding stability</b> for research talent.</p>
+        </div>
+        <div class="card accent">
+          <h3>Trust Reflected in Numbers</h3>
+          <p>Psychological safety and respectful leadership show up as a <b>94% CEO approval rating</b> and top-tier engagement.</p>
+        </div>
+      </div>
+
+      </div>
+
+      <div class="foot">
+        <div class="tag">Takeaway</div>
+        <p><b>Position business-model stability as a core magnet</b> — and pair performance ambition with psychological safety to win talent seeking sustainable careers.</p>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 8 ================= -->
+    <section class="slide">
+      <div class="pageno">08 / 08</div>
+      <div class="kicker">Strategic Takeaways & Actionable Benchmarks</div>
+      <h1 class="title">Strategic Roadmap & Benchmarks</h1>
+      <p class="core-msg">Operationalize values into behaviors, deploy <b>authentic peer storytelling</b>, optimize digital candidate journeys, and <b>embed ESG into total rewards</b>.</p>
+
+      <div class="body">
+      <div class="roadmap">
+        <div class="phase">
+          <div class="ph-no">1</div>
+          <div class="ph-sub">Foundation</div>
+          <h3>Codify Behavioral Values</h3>
+          <p>Define operational standards modeled on <b>"The 10 Essentials."</b></p>
+          <div class="out">→ Cultural alignment &amp; hiring precision</div>
+        </div>
+        <div class="phase">
+          <div class="ph-no">2</div>
+          <div class="ph-sub">Digital Ecosystem</div>
+          <h3>Upgrade Candidate UX</h3>
+          <p>Streamline navigation, add <b>tracking tools</b>, localize content.</p>
+          <div class="out">→ Higher conversion, reduced drop-off</div>
+        </div>
+        <div class="phase">
+          <div class="ph-no">3</div>
+          <div class="ph-sub">Narrative</div>
+          <h3>Impact-Led Storytelling</h3>
+          <p>Authentic profiles connecting <b>personal life to purpose</b>.</p>
+          <div class="out">→ Deeper emotional engagement</div>
+        </div>
+        <div class="phase">
+          <div class="ph-no">4</div>
+          <div class="ph-sub">Value Extension</div>
+          <h3>Rewards + ESG Integration</h3>
+          <p>Communicate <b>reward transparency and ESG</b> early in recruitment.</p>
+          <div class="out">→ Higher offer acceptance &amp; pride</div>
+        </div>
+      </div>
+
+      <ul class="bullets">
+        <li><b>Sequence the rollout</b> — values codification first, then digital portals and storytelling campaigns.</li>
+        <li><b>Measure multi-dimensionally</b> — candidate conversion, Glassdoor recommendation, leadership trust, and long-term retention.</li>
+      </ul>
+
+      </div>
+
+      <div class="foot">
+        <div class="tag">Close</div>
+        <p><b>Benchmark the best, then operationalize:</b> governance-anchored stability, codified culture, authentic voices, and transparent, ESG-rich rewards.</p>
+      </div>
+    </section>
+
+    <!-- ================= NAV CHROME ================= -->
+    <div id="chrome">
+      <div id="counter">Slide 1 of 8</div>
+      <div id="dots"></div>
+      <div class="btns">
+        <button id="prev" aria-label="Previous slide">‹</button>
+        <button id="next" aria-label="Next slide">›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.slide')];
+  const dotsEl=document.getElementById('dots');
+  const counter=document.getElementById('counter');
+  const progress=document.getElementById('progress');
+  let i=0;
+
+  slides.forEach((_,k)=>{
+    const d=document.createElement('span');
+    d.addEventListener('click',()=>go(k));
+    dotsEl.appendChild(d);
+  });
+  const dots=[...dotsEl.children];
+
+  function go(k){
+    i=Math.max(0,Math.min(slides.length-1,k));
+    slides.forEach((s,j)=>s.classList.toggle('active',j===i));
+    dots.forEach((d,j)=>d.classList.toggle('on',j===i));
+    counter.textContent='Slide '+(i+1)+' of '+slides.length;
+    progress.style.width=((i+1)/slides.length*100)+'%';
+    if(history.replaceState) history.replaceState(null,'','#'+(i+1));
+  }
+
+  document.getElementById('prev').addEventListener('click',()=>go(i-1));
+  document.getElementById('next').addEventListener('click',()=>go(i+1));
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ') go(i+1);
+    else if(e.key==='ArrowLeft'||e.key==='PageUp') go(i-1);
+    else if(e.key==='Home') go(0);
+    else if(e.key==='End') go(slides.length-1);
+  });
+
+  function fit(){
+    const deck=document.getElementById('deck');
+    const pad=40;
+    const s=Math.min((innerWidth-pad)/1280,(innerHeight-pad-46)/720);
+    deck.style.transform='scale('+s+')';
+  }
+  addEventListener('resize',fit);
+  fit();
+
+  const h=parseInt(location.hash.slice(1),10);
+  go(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
